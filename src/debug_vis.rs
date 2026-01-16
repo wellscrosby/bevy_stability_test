@@ -42,18 +42,15 @@ impl Plugin for DebugVisPlugin {
                     update_frame_time_history,
                     update_fps_display,
                     update_frametime_consistency_display.after(update_frame_time_history),
-                    drain_debug_queue,
-                    cleanup_stale_debug_texts,
+                    // drain_debug_queue,
+                    // cleanup_stale_debug_texts,
                     // toggle_debug_level,
-                    apply_debug_visibility,
+                    // apply_debug_visibility,
                 ),
             )
             .add_systems(
                 PostUpdate,
-                (
-                    draw_axes_gizmo.after(TransformSystems::Propagate),
-                    draw_frametime_barchart.after(TransformSystems::Propagate),
-                ),
+                draw_frametime_barchart
             );
     }
 }
@@ -465,53 +462,6 @@ fn cleanup_stale_debug_texts(mut texts: ResMut<DebugTexts>, mut commands: Comman
 fn setup_debug_top_gizmo_config(mut config_store: ResMut<GizmoConfigStore>) {
     let (config, _) = config_store.config_mut::<DebugTopGizmoGroup>();
     config.depth_bias = -1.0;
-}
-
-fn draw_axes_gizmo(
-    level: Res<DebugLevel>,
-    camera_query: Query<(&Camera, &GlobalTransform)>,
-    mut gizmos: Gizmos<DebugTopGizmoGroup>,
-) {
-    if *level != DebugLevel::Full {
-        return;
-    }
-
-    let Ok((camera, camera_transform)) = camera_query.single() else {
-        return;
-    };
-
-    // We want the axes to appear in the top-left, below the FPS.
-    // The FPS is at (8, 8). Let's put the axes center at roughly (50, 100) in screen pixels.
-    let axes_screen_pos = Vec2::new(100.0, 170.0);
-
-    // Convert screen position to world position at a fixed distance from the camera.
-    let Ok(ray) = camera.viewport_to_world(camera_transform, axes_screen_pos) else {
-        return;
-    };
-
-    let world_pos: Vec3 = ray.get_point(0.5); // 0.5 units in front of the camera
-
-    // Draw axes at that world position, but orientation should be absolute (world axes)
-    let length = 0.03;
-
-    // World X - Red
-    gizmos.line(
-        world_pos,
-        world_pos + Vec3::X * length,
-        Color::srgb(1.0, 0.0, 0.0),
-    );
-    // World Y - Green
-    gizmos.line(
-        world_pos,
-        world_pos + Vec3::Y * length,
-        Color::srgb(0.0, 1.0, 0.0),
-    );
-    // World Z - Blue
-    gizmos.line(
-        world_pos,
-        world_pos + Vec3::Z * length,
-        Color::srgb(0.0, 0.0, 1.0),
-    );
 }
 
 fn draw_frametime_barchart(
